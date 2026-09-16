@@ -15,6 +15,7 @@ TMPDIR_CURATION=../curation/tmp
 ID_MAP_ZFIN=../curation/id_map_zfin.tsv
 ID_MAP=../curation/id_map.tsv
 
+
 #$(PDIR)/data/zfin/%.ofn: $(PDIR)/data/zfin/%.tsv $(PDIR)/dosdp-patterns/%.yaml $(SRC) all_imports .FORCE
 #	@$(if $(findstring _label.ofn,$@),dosdp-tools generate --infile=$< --template=$(word 2, $^) --ontology=$(word 3, $^) --obo-prefixes=true --outfile=$@,dosdp-tools generate --infile=$< --template=$(word 2, $^) --ontology=$(word 3, $^) --obo-prefixes=true  --restrict-axioms-to=logical --outfile=$@)
 
@@ -200,7 +201,17 @@ $(TEMPLATESDIR)/%.owl: $(TEMPLATESDIR)/%.tsv $(SRC)
 templates: $(TEMPLATES)
 	echo $(TEMPLATES)
 	
-	
+
+################################################
+### Include derived UPHENO:0000003 relations ###
+################################################
+SHARED_ROBOT_COMMANDS += upheno:extract-upheno-relations \
+			 --term-file=$(ZP_SRC_SEED) \
+			 --relation UPHENO:0000003
+
+$(ONT)-full.owl $(ONT)-base.owl: $(ZP_SRC_SEED) | all_robot_plugins
+
+
 #############################################
 ### WHOLE PIPELINE (main job)      ##########
 #############################################
@@ -252,6 +263,7 @@ mass_obsolete: $(TMPDIR_CURATION)/old_labels.txt $(TMPDIR_CURATION)/new_labels.t
 qc:
 	$(ROBOT) report -i ../../zp.owl --fail-on None --print 5 -o zp_owl_report.owl
 	$(ROBOT) merge --input ../../zp.owl reason --reasoner ELK  --equivalent-classes-allowed asserted-only --exclude-tautologies structural --output test.owl && rm test.owl && echo "Success"
+
 
 #############################################
 ### ZP ZAPP                 #################
