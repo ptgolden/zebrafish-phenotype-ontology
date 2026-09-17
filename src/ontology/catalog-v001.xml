@@ -3,6 +3,7 @@
   <group id="odk-managed-catalog" prefer="public">
     <uri name="http://purl.obolibrary.org/obo/zp/imports/merged_import.owl" uri="imports/merged_import.owl" />
     <uri name="http://purl.obolibrary.org/obo/zp/components/obsolete.owl" uri="components/obsolete.owl" />
+    <uri name="http://purl.obolibrary.org/obo/zp/components/zapp.owl" uri="components/zapp.owl" />
     <uri name="http://purl.obolibrary.org/obo/zp/patterns/definitions.owl" uri="../patterns/definitions.owl" />
   </group>
   <uri id="Imports Wizard Entry" name="urn:unnamed:ontology#ont1" uri="file:/ws/zebrafish-phenotype-ontology/src/patterns/pattern.owl" />

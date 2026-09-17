@@ -269,24 +269,15 @@ qc:
 ### ZP ZAPP                 #################
 #############################################
 
-tmp/zp-zapp-manual.owl: zapp/zp-zapp-manual.tsv
-	$(ROBOT) template --template $< --output $@
+ZAPP_PATTERNS := $(shell cat zapp/include-patterns.txt)
+ZAPP_MATCH_TSVS := $(ZAPP_PATTERNS:%=$(PATTERNDIR)/data/matches/%.tsv)
+ZAPP_SUBSET_URI := http://purl.obolibrary.org/obo/zp\#zapp
 
-tmp/zp-zapp.csv: zp.owl ../sparql/zp_zapp_terms.sparql
-	$(ROBOT) query -f csv -i $< --use-graphs true --query ../sparql/zp_zapp_terms.sparql $@
+$(TMPDIR)/zapp-subset.tsv: $(ZAPP_MATCH_TSVS) | $(TMPDIR)
+	printf 'ID\tSubset\n' > $@
+	printf 'ID\tAI oboInOwl:inSubset\n' >> $@
+	tail -q -n +2 $(ZAPP_MATCH_TSVS) | cut -f1 | sort -u | \
+          awk '{ print $$0 "\t" "$(ZAPP_SUBSET_URI)" }' >> $@
 
-ANNOTATION_PROPERTIES_ZAPP = rdfs:label IAO:0000115 OMO:0002000 oboInOwl:hasDbXref oboInOwl:hasExactSynonym oboInOwl:hasRelatedSynonym oboInOwl:hasBroadSynonym oboInOwl:hasNarrowSynonym
-
-zp-zapp.owl: zp.owl tmp/zp-zapp.csv tmp/zp-zapp-manual.owl tmp/definitions-matches.owl
-	$(ROBOT) merge -i zp.owl \
-	  	remove -T tmp/zp-zapp.csv --select complement \
-	  	remove $(foreach p, $(ANNOTATION_PROPERTIES_ZAPP), --term $(p)) \
-		        --term-file tmp/zp-zapp.csv \
-		        --select complement \
-	  	remove --term rdfs:label --select "ZP:*" \
-		merge -i tmp/zp-zapp-manual.owl \
-		merge -i tmp/definitions-matches.owl \
-		$(SHARED_ROBOT_COMMANDS) \
-		annotate --link-annotation http://purl.org/dc/elements/1.1/type http://purl.obolibrary.org/obo/IAO_8000001 \
-		--ontology-iri $(ONTBASE)/$@ $(ANNOTATE_ONTOLOGY_VERSION) \
-		--output $@.tmp.owl && mv $@.tmp.owl $@
+$(COMPONENTSDIR)/zapp.owl: $(TMPDIR)/zapp-subset.tsv $(TMPDIR)/stamp-component-zapp.owl
+	$(ROBOT) template --template $< $(ANNOTATE_CONVERT_FILE)

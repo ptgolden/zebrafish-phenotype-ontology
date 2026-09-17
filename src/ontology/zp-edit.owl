@@ -8,6 +8,7 @@ Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
 
 Ontology(<http://purl.obolibrary.org/obo/zp.owl>
 Import(<http://purl.obolibrary.org/obo/zp/components/obsolete.owl>)
+Import(<http://purl.obolibrary.org/obo/zp/components/zapp.owl>)
 Import(<http://purl.obolibrary.org/obo/zp/imports/merged_import.owl>)
 Import(<http://purl.obolibrary.org/obo/zp/patterns/definitions.owl>)
 Annotation(<http://purl.obolibrary.org/obo/IAO_0000700> <http://purl.obolibrary.org/obo/ZP_0000000>)
