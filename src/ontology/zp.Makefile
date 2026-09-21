@@ -205,8 +205,8 @@ $(TEMPLATESDIR)/%.owl: $(TEMPLATESDIR)/%.tsv $(SRC)
 
 templates: $(TEMPLATES)
 	echo $(TEMPLATES)
-	
-	
+
+
 #############################################
 ### ZFIN data snapshots            ##########
 #############################################
@@ -229,6 +229,22 @@ $(ZFIN_GENE_DATA):
 refresh_zfin_data:
 	rm -f $(ZFIN_FISH_DATA) $(ZFIN_GENE_DATA)
 	$(MAKE) $(ZFIN_FISH_DATA) $(ZFIN_GENE_DATA)
+
+
+################################################
+### Post-processing for release artifacts ######
+################################################
+
+SHARED_ROBOT_COMMANDS += remove -T blacklist_eqs.txt --axioms equivalent --preserve-structure false \
+	query --update ../sparql/rename-obsolete-classes.ru
+
+# Include derived UPHENO:0000003 relations
+SHARED_ROBOT_COMMANDS += upheno:extract-upheno-relations \
+	--term-file=$(ZP_SRC_SEED) \
+	--relation UPHENO:0000003
+
+$(ONT)-full.owl $(ONT)-base.owl: $(ZP_SRC_SEED) | all_robot_plugins
+
 
 #############################################
 ### WHOLE PIPELINE (main job)      ##########
