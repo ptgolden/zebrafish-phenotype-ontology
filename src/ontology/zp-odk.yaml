@@ -11,7 +11,6 @@ export_formats:
 release_artefacts: 
   - base
   - full
-  - custom-zp-zapp
 import_group:
   use_base_merging: TRUE
   exclude_iri_patterns:
@@ -72,6 +71,10 @@ components:
       use_template: TRUE
       templates:
         - obsolete.tsv
+subset_group:
+  products:
+    - id: zapp
+      description: "Phenotypes used in the Zebrafish Toxicology Phenotype Atlas Project (ZAPP)."
 pattern_pipelines_group:
   products:
     - id: manual
@@ -89,6 +92,10 @@ pattern_pipelines_group:
       dosdp_tools_options: "--obo-prefixes=true --restrict-axioms-to=logical"
       ontology: tmp/zp-edit-merged-reasoned.owl
 robot_java_args: '-Xmx8G'
+robot_plugins:
+  plugins:
+    - name: upheno
+      mirror_from: https://github.com/monarch-initiative/monarch-robot-plugins/releases/latest/download/monarch-robot-extensions.jar
 allow_equivalents: asserted-only
 documentation:
   documentation_system: mkdocs

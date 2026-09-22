@@ -1,0 +1,109 @@
+name: Run and deploy release
+
+on:
+  workflow_dispatch:
+    inputs:
+      force-release:
+        description: "Build the release even if QC fails"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: zp-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: obolibrary/odkfull:v1.6.1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      # --- zp_release.sh, step by step -------------------------------
+
+      - name: Refresh ZFIN data
+        run: cd src/ontology && make refresh_zfin_data
+
+      - name: Rebuild ZP label index
+        run: cd src/ontology && make -B zp_labels.csv
+
+      - name: Run ZFIN and anatomy pipelines
+        run: cd src/ontology && make IMP=false PAT=true MIR=false COMP=false zp_pipeline_prepare_data
+
+      - name: Build templates and patterns
+        run: cd src/ontology && make IMP=false PAT=true MIR=false COMP=true templates patterns
+
+      - name: Refresh mirrors and merged import
+        run: cd src/ontology && make IMP=true PAT=false MIR=true COMP=false refresh-merged
+
+      - name: Rebuild patterns against refreshed imports
+        run: cd src/ontology && make IMP=false PAT=true MIR=false COMP=true patterns
+
+      # `test` runs before `all_assets` inside prepare_release_fast, so to
+      # be able to force a release past QC failures the two halves are run
+      # as separate steps and only the QC step is allowed to fail.
+      - name: Run release QC
+        id: qc
+        continue-on-error: ${{ inputs.force-release }}
+        run: cd src/ontology && make IMP=false PAT=false MIR=false COMP=false test
+
+      - name: Build release artifacts
+        run: cd src/ontology && make IMP=false PAT=false MIR=false COMP=false config_check custom_reports all_assets copy_release_files
+
+      - name: Warn if QC was overridden
+        if: steps.qc.outcome == 'failure'
+        run: echo "::warning::QC failed but the release was forced (force-release=true)"
+
+      # --- publish ----------------------------------------------------
+
+      - name: Create pull request with updated release files
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: release-${{ steps.date.outputs.date }}
+          commit-message: Update release files for ${{ steps.date.outputs.date }}
+          title: "Release ${{ steps.date.outputs.date }}: update tracked release files"
+          body: |
+            Automated changes from the ${{ steps.date.outputs.date }} release run:
+            id maps, pattern TSVs, obsoletion templates, labels, and imports.
+
+            Companion draft release: v${{ steps.date.outputs.date }}
+            QC outcome: ${{ steps.qc.outcome }}
+          delete-branch: true
+
+      - name: Create draft GitHub release with artifacts
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          draft: true
+          tag_name: v${{ steps.date.outputs.date }}
+          files: |
+            zp.owl
+            zp.obo
+            zp-base.owl
+            zp-base.obo
+            zp-full.owl
+            zp-full.obo
+            subsets/zapp.owl
+            subsets/zapp.obo
+            subsets/zapp.tsv
+
+      # --- diagnostics --------------------------------------------------
+
+      - name: Upload QC reports on failure
+        if: failure() || steps.qc.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: qc-reports-${{ steps.date.outputs.date }}
+          path: |
+            src/ontology/reports/
+          if-no-files-found: ignore

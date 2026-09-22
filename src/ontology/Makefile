@@ -10,7 +10,7 @@
 # More information: https://github.com/INCATools/ontology-development-kit/
 
 # Fingerprint of the configuration file when this Makefile was last generated
-CONFIG_HASH=                27bcfbf22854c6eb318992d90aaa2f698967c12545e5df8c945d2b57796aff60
+CONFIG_HASH=                a1a155ea1ce53f142a17fcf422c8136032969965850b7a6e5c9ae7054dfdce14
 
 
 # ----------------------------------------
@@ -69,7 +69,7 @@ PATTERN_RELEASE_FILES=      $(PATTERNDIR)/definitions.owl $(PATTERNDIR)/pattern.
 
 FORMATS = $(sort  owl obo owl)
 FORMATS_INCL_TSV = $(sort $(FORMATS) tsv)
-RELEASE_ARTEFACTS = $(sort $(ONT)-base $(ONT)-full zp-zapp )
+RELEASE_ARTEFACTS = $(sort $(ONT)-base $(ONT)-full )
 
 ifeq ($(ODK_DEBUG),yes)
 ODK_DEBUG_FILE = debug.log
@@ -154,7 +154,7 @@ custom_robot_plugins:
 
 
 .PHONY: extra_robot_plugins
-extra_robot_plugins: 
+extra_robot_plugins:  $(ROBOT_PLUGINS_DIRECTORY)/upheno.jar 
 
 
 # Install all ROBOT plugins to the runtime plugins directory
@@ -173,6 +173,9 @@ $(ROBOT_PLUGINS_DIRECTORY)/%.jar:
 	fi
 
 # Specific rules for supplementary plugins defined in configuration
+
+$(ROBOT_PLUGINS_DIRECTORY)/upheno.jar:
+	curl -L -o $@ https://github.com/monarch-initiative/monarch-robot-plugins/releases/latest/download/monarch-robot-extensions.jar
 
 
 # ----------------------------------------
@@ -207,7 +210,7 @@ all_imports: $(IMPORT_FILES)
 # ----------------------------------------
 
 
-SUBSETS = 
+SUBSETS =  zapp
 
 SUBSET_ROOTS = $(patsubst %, $(SUBSETDIR)/%, $(SUBSETS))
 SUBSET_FILES = $(foreach n,$(SUBSET_ROOTS), $(foreach f,$(FORMATS_INCL_TSV), $(n).$(f)))
@@ -900,8 +903,6 @@ $(ONT)-base.obo: $(ONT)-base.owl
 	$(ROBOT) convert --input $< --check false -f obo $(OBO_FORMAT_OPTIONS) -o $@
 $(ONT)-full.obo: $(ONT)-full.owl
 	$(ROBOT) convert --input $< --check false -f obo $(OBO_FORMAT_OPTIONS) -o $@
-zp-zapp.obo: zp-zapp.owl
-	$(ROBOT) convert --input $< --check false -f obo $(OBO_FORMAT_OPTIONS) -o $@
 # ----------------------------------------
 # Release artefacts: main release artefacts
 # ----------------------------------------
@@ -944,9 +945,6 @@ $(ONT)-full.owl: $(EDIT_PREPROCESSED) $(OTHER_SRC) $(IMPORT_FILES)
 		relax $(RELAX_OPTIONS) \
 		reduce -r $(REASONER) $(REDUCE_OPTIONS) \
 		$(SHARED_ROBOT_COMMANDS) annotate --ontology-iri $(ONTBASE)/$@ $(ANNOTATE_ONTOLOGY_VERSION) --output $@.tmp.owl && mv $@.tmp.owl $@
-
-zp-zapp.owl:
-	echo "ERROR: You have configured a custom release artefact ($@); this release artefact needs to be define in zp.Makefile!" && false
 # ----------------------------------------
 # Debugging Tools
 # ----------------------------------------
